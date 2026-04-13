@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Trị Viên - Space Explorers</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="assets/js/auth.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">🚀 Quản Trị Viên</div>
+            <ul class="nav-links">
+                <li><a href="admin-dashboard.html">Quản Lý Người Học</a></li>
+                <li><a href="manage-courses.html">Quản Lý Khóa Học</a></li>
+                <li><a href="index.html">🏠 Về Trang Chủ</a></li>
+                <li><a href="#" onclick="logout()">Đăng Xuất</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main style="padding: 40px 5%; max-width: 1300px; margin: 0 auto;">
+        <h2 style="text-align:center; color:#00ffff; margin-bottom:30px;">📊 Biểu Đồ Tiến Độ Học Tập Tổng Thể</h2>
+        <canvas id="progressChart" height="140"></canvas>
+
+        <h2 style="margin-top:60px;">👥 Danh Sách Người Học & Tiến Độ Thực Tế</h2>
+        <table style="width:100%; border-collapse:collapse; margin-top:20px;">
+            <thead>
+                <tr style="background:#1a1a3a;">
+                    <th style="padding:12px; text-align:left;">Họ Tên</th>
+                    <th style="padding:12px; text-align:left;">Email / User ID</th>
+                    <th style="padding:12px; text-align:center;">Tổng Thời Gian Học</th>
+                    <th style="padding:12px; text-align:center;">Số Bài Hoàn Thành</th>
+                    <th style="padding:12px; text-align:center;">Trạng Thái</th>
+                    <th style="padding:12px; text-align:center;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+        </table>
+
+        <!-- === PHẦN QUẢN LÝ ĐĂNG KÝ KHÓA HỌC === -->
+        <h2 style="margin-top:60px; color:#00ffff;">📚 Quản Lý Số Lượng Người Đăng Ký Khóa Học</h2>
+
+        <!-- Thống kê nhanh -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:20px; margin-bottom:30px;">
+            <div style="background:#1a1a3a; padding:20px; border-radius:12px; text-align:center;">
+                <h4>Tổng số đăng ký</h4>
+                <h2 id="totalEnrollments" style="color:#00ffaa; margin:10px 0; font-size:2.5rem;">0</h2>
+            </div>
+            <div style="background:#1a1a3a; padding:20px; border-radius:12px; text-align:center;">
+                <h4>Số khóa học có học viên</h4>
+                <h2 id="coursesWithStudents" style="color:#00ffaa; margin:10px 0; font-size:2.5rem;">0</h2>
+            </div>
+        </div>
+
+        <!-- Bảng chi tiết -->
+        <table style="width:100%; border-collapse:collapse; margin-top:20px;">
+            <thead>
+                <tr style="background:#1a1a3a;">
+                    <th style="padding:12px; text-align:left;">Tên Khóa Học</th>
+                    <th style="padding:12px; text-align:center;">Số Học Viên Đăng Ký</th>
+                    <th style="padding:12px; text-align:center;">Tiến Độ Trung Bình</th>
+                    <th style="padding:12px; text-align:center;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="enrollmentTableBody"></tbody>
+        </table>
+    </main>
+
+    <script type="module">
+        import supabase from './assets/js/supabase-config.js';
+
+        // ==================== BIỂU ĐỒ TIẾN ĐỘ TỔNG THỂ ====================
+        async function loadProgressChart() {
+            const { data: logs } = await supabase.from('lesson_watch_log').select('watch_duration');
+            const totalMinutes = logs ? Math.round(logs.reduce((sum, log) => sum + (log.watch_duration || 0), 0) / 60) : 0;
+
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Tổng thời gian học của tất cả học viên'],
+                    datasets: [{
+                        label: 'Phút',
+                        data: [totalMinutes],
+                        backgroundColor: '#5e81ac',
+                        borderColor: '#00ffaa',
+                        borderWidth: 2
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    scales: { y: { beginAtZero: true } } 
+                }
+            });
+        }
+
+        // ==================== DANH SÁCH NGƯỜI HỌC ====================
+        async function loadUsers() {
+            const { data: users } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+
+            for (const user of users) {
+                const { data: logs } = await supabase
+                    .from('lesson_watch_log')
+                    .select('watch_duration')
+                    .eq('user_id', user.user_id);
+
+                const totalMinutes = logs ? Math.round(logs.reduce((sum, log) => sum + (log.watch_duration || 0), 0) / 60) : 0;
+                const completedCount = 0; // tạm thời vì bảng chưa có cột completed
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding:12px;">${user.name}</td>
+                    <td style="padding:12px;">${user.user_id}</td>
+                    <td style="padding:12px; text-align:center;">${totalMinutes} phút</td>
+                    <td style="padding:12px; text-align:center;">${completedCount} bài</td>
+                    <td style="padding:12px; text-align:center;">
+                        <span style="color:${user.status === 'active' ? '#00ffaa' : '#ffaa00'}">
+                            ${user.status === 'active' ? 'Hoạt động' : 'Đã khóa'}
+                        </span>
+                    </td>
+                    <td style="padding:12px; text-align:center;">
+                        <button onclick="toggleUserStatus('${user.id}', '${user.status}')" style="margin-right:8px;">
+                            ${user.status === 'active' ? '🔒 Khóa' : '🔓 Mở'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        // ==================== QUẢN LÝ ĐĂNG KÝ KHÓA HỌC ====================
+        async function loadCourseEnrollments() {
+            try {
+                const { data: progressData, error } = await supabase
+                    .from('course_progress')
+                    .select(`
+                        course_id,
+                        progress,
+                        courses(title)
+                    `)
+                    .order('updated_at', { ascending: false });
+
+                if (error) throw error;
+
+                const tbody = document.getElementById('enrollmentTableBody');
+                tbody.innerHTML = '';
+
+                if (!progressData || progressData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:#888;">Chưa có học viên nào đăng ký khóa học nào.</td></tr>`;
+                    document.getElementById('totalEnrollments').textContent = 0;
+                    document.getElementById('coursesWithStudents').textContent = 0;
+                    return;
+                }
+
+                const courseMap = new Map();
+
+                progressData.forEach(item => {
+                    const courseId = item.course_id;
+                    const title = item.courses?.title || 'Khóa học không tồn tại';
+                    const progress = item.progress || 0;
+
+                    if (!courseMap.has(courseId)) {
+                        courseMap.set(courseId, { title, count: 0, totalProgress: 0 });
+                    }
+                    const c = courseMap.get(courseId);
+                    c.count++;
+                    c.totalProgress += progress;
+                });
+
+                let totalEnrollments = 0;
+
+                courseMap.forEach(course => {
+                    totalEnrollments += course.count;
+                    const avgProgress = Math.round(course.totalProgress / course.count);
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding:12px;">${course.title}</td>
+                        <td style="padding:12px; text-align:center; font-weight:bold; color:#00ffaa;">${course.count} học viên</td>
+                        <td style="padding:12px; text-align:center;">${avgProgress}%</td>
+                        <td style="padding:12px; text-align:center;">
+                            <button onclick="viewCourseStudents('${course.title}')" style="font-size:13px;">Xem chi tiết</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('totalEnrollments').textContent = totalEnrollments;
+                document.getElementById('coursesWithStudents').textContent = courseMap.size;
+
+            } catch (err) {
+                console.error('Lỗi loadCourseEnrollments:', err);
+                const tbody = document.getElementById('enrollmentTableBody');
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:#ff6666;">❌ Lỗi tải dữ liệu. Vui lòng refresh lại trang.</td></tr>`;
+            }
+        }
+
+        // ==================== CÁC HÀM HỖ TRỢ ====================
+        window.toggleUserStatus = async function(userId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            await supabase.from('profiles').update({ status: newStatus }).eq('id', userId);
+            alert(newStatus === 'active' ? "✅ Đã mở khóa!" : "🔒 Đã khóa!");
+            loadUsers();
+        };
+
+        window.viewCourseStudents = function(courseTitle) {
+            alert(`📌 Đang xem chi tiết học viên của khóa học: ${courseTitle}\n\n(Bạn có thể mở rộng hàm này sau để hiển thị danh sách học viên)`);
+        };
+
+        // ==================== KHỞI ĐỘNG TRANG ====================
+        window.onload = () => {
+            if (typeof checkAuth === 'function') checkAuth();
+            loadProgressChart();
+            loadUsers();
+            loadCourseEnrollments();
+        };
+    </script>
+</body>
+</html>

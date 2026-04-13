@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Explorers - Khám Phá Vũ Trụ</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script type="module" src="assets/js/auth.js"></script>
+    <style>
+        :root { --teal: #00d4aa; --cyan: #00ffff; }
+        body { font-family: 'Roboto', system-ui, sans-serif; background: #0a0a1f; color: #fff; }
+        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+
+        /* HERO */
+        .hero {
+            height: 100vh; min-height: 700px;
+            background: linear-gradient(135deg, #00b894, #00d4aa);
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; inset: 0;
+            background: url('https://picsum.photos/id/1015/1920/1080') center/cover;
+            opacity: 0.15; z-index: 1;
+        }
+        .hero-content { z-index: 2; max-width: 900px; padding: 0 20px; }
+        .hero h1 { font-size: 4.5rem; line-height: 1.1; margin-bottom: 20px; color: #fff; }
+        .hero p { font-size: 1.4rem; margin-bottom: 40px; }
+        .btn-teky {
+            padding: 18px 48px; font-size: 1.3rem; font-weight: bold;
+            background: #fff; color: #00b894; border: none; border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,212,170,0.4); transition: all 0.3s;
+        }
+        .btn-teky:hover { transform: scale(1.08); }
+
+        /* KHÓA HỌC */
+        .section-title { font-size: 2.8rem; text-align: center; margin: 80px 0 40px; color: #fff; }
+        .courses-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 28px; padding: 0 5%; max-width: 1400px; margin: 0 auto;
+        }
+        .course-card {
+            background: #1a1a3a; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); transition: all 0.4s;
+        }
+        .course-card:hover { transform: translateY(-12px); }
+        .course-card img { width: 100%; height: 220px; object-fit: cover; }
+        .course-info { padding: 24px; }
+        .course-info h3 { font-size: 1.45rem; margin-bottom: 10px; }
+        .course-info p { color: #ccc; font-size: 0.95rem; line-height: 1.5; margin-bottom: 18px; }
+        .stats { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.95rem; color: #aaa; }
+        .rating { color: #ffd700; font-weight: bold; }
+        .btn-cyan {
+            width: 100%; padding: 15px; background: linear-gradient(90deg, #00ffff, #00d4aa);
+            color: #000; border: none; border-radius: 50px; font-weight: bold;
+        }
+
+        /* TƯƠNG LAI & FOOTER */
+        .future-section { background: #00d4aa; padding: 100px 5%; text-align: center; color: #fff; }
+        .future-section h2 { font-size: 2.8rem; margin-bottom: 16px; }
+        .future-section p { font-size: 1.25rem; max-width: 800px; margin: 0 auto 40px; }
+        .future-btn { padding: 16px 40px; font-size: 1.2rem; font-weight: bold; border-radius: 50px; margin: 0 10px; }
+        .future-btn-primary { background: #111; color: #fff; }
+        .future-btn-outline { background: transparent; color: #fff; border: 2px solid #fff; }
+
+        .footer-contact { background: #111; padding: 80px 5% 60px; }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; }
+        .footer-column h3 { color: #00d4aa; margin-bottom: 20px; }
+        .social-icons a { color: #fff; font-size: 1.8rem; margin-right: 18px; transition: 0.3s; }
+        .social-icons a:hover { color: #00ffff; }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <header>
+        <nav>
+            <div class="logo">🚀 Space Explorers</div>
+            <ul class="nav-links">
+                <li><a href="#" onclick="showPage('home')">Trang Chủ</a></li>
+                <li><a href="#" onclick="showPage('news')">Tin Tức</a></li>
+                <li><a href="#" onclick="showPage('forum')">Diễn Đàn</a></li>
+            </ul>
+            <div class="auth-buttons" id="authButtons"></div>
+        </nav>
+    </header>
+
+    <main>
+        <div id="home" class="page active">
+            <!-- HERO -->
+            <section class="hero">
+                <div class="hero-content">
+                    <h1>Learn Today<br>Lead Tomorrow</h1>
+                    <p>Lớp Học dành cho học sinh 5-10 tuổi.<br>Khám phá Vũ Trụ Kỹ Năng Sống Qua Các Bài Học Thú Vị,Hấp Dẫn.</p>
+                    <button onclick="document.getElementById('courses').scrollIntoView({behavior:'smooth'})" class="btn-teky">
+                        BẮT ĐẦU HÀNH TRÌNH
+                    </button>
+                </div>
+            </section>
+
+            <!-- CÁC KHÓA HỌC -->
+            <section id="courses">
+                <h2 class="section-title">🛸 Các Khóa Học Nổi Bật</h2>
+                <div class="courses-grid" id="coursesGrid">
+                    <p id="loadingText" style="grid-column:1/-1; text-align:center; padding:80px; color:#aaa;">
+                        Đang tải khóa học...
+                    </p>
+                </div>
+            </section>
+
+            <!-- XÂY DỰNG TƯƠNG LAI -->
+            <section class="future-section">
+                <h2>Xây dựng tương lai tốt đẹp hơn cho con bạn</h2>
+                <p>Hãy tham gia cùng chúng tôi trong việc giúp con bạn trang bị những kỹ năng cần thiết để làm chủ cuộc sống của chính mình với những giáo án được thiết kế để bồi dưỡng,huấn luyện những kỹ năng sống cơ bản cho trẻ từ 5-10 tuổi.</p>
+                <div>
+                    <button onclick="showRegister()" class="future-btn future-btn-primary">ĐĂNG KÝ HỌC THỬ MIỄN PHÍ</button>
+                    <button onclick="document.getElementById('courses').scrollIntoView({behavior:'smooth'})" class="future-btn future-btn-outline">XEM GIỚI THIỆU</button>
+                </div>
+            </section>
+
+            <!-- Phần liên hệ dưới cùng -->
+            <div style="border-top:1px solid #333; margin-top:60px; padding-top:40px; display:flex; flex-wrap:wrap; gap:40px; justify-content:space-between; max-width:1400px; margin-left:auto; margin-right:auto;">
+                <div>
+                    <h3>Bạn cần trợ giúp? Liên hệ ngay</h3>
+                    <p><strong>Trụ sở chính Miền Bắc</strong><br>33A Nghách 43/86 Trung Kính,Trung Hoà,Cầu Giấy,Hà Nội.</p>
+                    <p><strong>Trụ sở chính Miền Nam</strong><br>152 Đ. Điện Biên Phủ, Phường 25, Bình Thạnh, TP. Hồ Chí Minh</p>
+                </div>
+                <div>
+                    <p><strong>Đường dây nóng:</strong> 0868541863</p>
+                    <p><strong>Thư điện tử:</strong> support@spaceexplorers.vn</p>
+                    <p><strong>Giờ mở cửa:</strong> Thứ 2 - Chủ nhật 9:00am - 5:30pm</p>
+                </div>
+                <div>
+                    <p>Đăng ký thư điện tử ngay hôm nay để nhận bản tin mới nhất về khóa học, sự kiện và ưu đãi độc quyền!</p>
+                    <div class="social-icons" style="margin-top:20px;">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-x-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+    <!-- === MODAL ĐĂNG NHẬP & ĐĂNG KÝ (GIỮ NGUYÊN HOÀN TOÀN) === -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">×</span>
+            <h2 style="color:#00ffff; text-align:center; margin-bottom:2rem;">🚀 Đăng Nhập</h2>
+            <div class="form-group"><label>Email</label><input id="loginEmail" type="email" required></div>
+            <div class="form-group"><label>Mật khẩu</label><input id="loginPassword" type="password" required></div>
+            <button onclick="login()" class="btn btn-primary" style="width:100%; padding:14px;">Đăng Nhập</button>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">×</span>
+            <h2 style="color:#00ffff; text-align:center; margin-bottom:2rem;">⭐ Đăng Ký Tài Khoản</h2>
+            <div class="form-group"><label>Họ và tên</label><input id="registerName" type="text" required></div>
+            <div class="form-group"><label>Email</label><input id="registerEmail" type="email" required></div>
+            <div class="form-group"><label>Mật khẩu</label><input id="registerPassword" type="password" required></div>
+            <div class="form-group"><label>Tuổi</label><input id="registerAge" type="number" min="5" max="12" required></div>
+            <button onclick="register()" class="btn btn-primary" style="width:100%; padding:14px;">Đăng Ký</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import supabase from './assets/js/supabase-config.js';
+
+        console.log('🚀 Script module đã load thành công!');
+
+        async function loadCourses() {
+            const grid = document.getElementById('coursesGrid');
+            const loading = document.getElementById('loadingText');
+
+            console.log('🔍 [loadCourses] BẮT ĐẦU chạy...');
+            console.log('🔍 supabase object:', supabase);
+
+            try {
+                const { data, error } = await supabase
+                    .from('courses')
+                    .select('*')
+                    .order('id', { ascending: false });
+
+                console.log('🔍 Dữ liệu trả về từ Supabase:', data);
+                console.log('🔍 Error (nếu có):', error);
+
+                if (error) throw error;
+
+                loading.style.display = 'none';
+                grid.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:80px; color:#aaa;">
+                        Chưa có khóa học nào.<br>Hãy thêm ở trang Quản Lý Khóa Học!
+                    </p>`;
+                    return;
+                }
+
+                data.forEach(course => {
+                    const card = document.createElement('div');
+                    card.className = 'course-card';
+                    card.innerHTML = `
+                        <div class="course-image">
+                            ${course.image_url 
+                                ? `<img src="${course.image_url}" alt="${course.title}" style="width:100%; height:180px; object-fit:cover;">` 
+                                : `<div style="font-size:80px; text-align:center; padding:40px 0;">🪐</div>`}
+                        </div>
+                        <h3>${course.title}</h3>
+                        <div class="course-price">${Number(course.price).toLocaleString('vi-VN')} VNĐ</div>
+                        <p>${course.description}</p>
+                        <button class="btn-cyan" onclick="viewCourse('${course.id}', '${course.title}')">Xem Khóa Học</button>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                console.log(`✅ Đã hiển thị ${data.length} khóa học`);
+            } catch (err) {
+                console.error('❌ Lỗi loadCourses:', err);
+                loading.innerHTML = `❌ Lỗi tải khóa học:<br><small>${err.message}</small>`;
+            }
+        }
+
+        window.viewCourse = function(id, title) {
+            window.location.href = `course-detail.html?id=${id}`;
+        };
+
+        window.addEventListener('load', () => {
+            console.log('📌 window.load event đã chạy');
+            loadCourses();
+        });
+    </script>
+</body>
+</html>

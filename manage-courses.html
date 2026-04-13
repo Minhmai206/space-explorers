@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Khóa Học - Space Explorers</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script type="module" src="assets/js/auth.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">🚀 Quản Lý Khóa Học</div>
+            <ul class="nav-links">
+                <li><a href="admin-dashboard.html">Quản Lý Người Học</a></li>
+                <li><a href="manage-courses.html">Quản Lý Khóa Học</a></li>
+                <li><a href="index.html">🏠 Về Trang Chủ</a></li>
+                <li><a href="#" onclick="logout()">Đăng Xuất</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main style="padding: 30px 5%;">
+        <h2>Danh Sách Khóa Học</h2>
+        <table style="width:100%; border-collapse:collapse; margin:20px 0;">
+            <thead>
+                <tr style="background:#1a1a3a;">
+                    <th style="padding:12px; text-align:left;">ID</th>
+                    <th style="padding:12px; text-align:left;">Tiêu Đề</th>
+                    <th style="padding:12px; text-align:left;">Mô Tả</th>
+                    <th style="padding:12px; text-align:right;">Giá (VNĐ)</th>
+                    <th style="padding:12px; text-align:center;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="courseTableBody"></tbody>
+        </table>
+
+        <!-- Form thêm khóa học -->
+        <h2 style="margin-top:50px;">➕ Thêm Khóa Học Mới</h2>
+        <form id="addCourseForm" style="background:#1a1a3a; padding:25px; border-radius:15px;">
+            <div class="form-group"><label>Tiêu Đề</label><input type="text" id="title" required></div>
+            <div class="form-group"><label>Mô Tả</label><textarea id="description" rows="4" required></textarea></div>
+            <div class="form-group"><label>Giá (VNĐ)</label><input type="number" id="price" required></div>
+            <div class="form-group"><label>Hình ảnh URL</label><input type="text" id="image_url" required></div>
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:14px;">✅ Thêm Khóa Học</button>
+        </form>
+
+        <!-- Form quản lý bài học -->
+        <div id="lessonFormContainer" style="display:none; margin-top:40px; background:#1a1a3a; padding:25px; border-radius:15px;">
+            <h3 id="lessonFormTitle">Quản lý bài học</h3>
+            <input type="hidden" id="currentCourseId">
+
+            <div id="existingLessons" style="margin:20px 0;"></div>
+
+            <h4>Thêm bài học mới</h4>
+            <div class="form-group"><label>Số thứ tự bài</label><input type="number" id="lessonNumber" value="1" required></div>
+            <div class="form-group"><label>Tên bài học</label><input type="text" id="lessonTitle" required></div>
+            <div class="form-group"><label>Mô tả bài học</label><textarea id="lessonDescription" rows="2"></textarea></div>
+            <div class="form-group"><label>Video URL (YouTube)</label><input type="text" id="lessonVideoUrl"></div>
+            <div class="form-group"><label>File URL (PDF, PPT...)</label><input type="text" id="lessonFileUrl"></div>
+            <div class="form-group">
+                <label>Loại nội dung</label>
+                <select id="lessonContentType">
+                    <option value="video">Video</option>
+                    <option value="document">Tài liệu</option>
+                </select>
+            </div>
+
+            <button onclick="addLesson()" class="btn btn-primary" style="width:100%; padding:14px;">✅ Thêm Bài Học</button>
+            <button onclick="hideLessonForm()" class="btn" style="width:100%; margin-top:10px;">Đóng</button>
+        </div>
+    </main>
+
+    <script type="module">
+        import supabase from './assets/js/supabase-config.js';
+
+        async function loadCourses() {
+            const { data: courses } = await supabase.from('courses').select('*').order('id', { ascending: false });
+            const tbody = document.getElementById('courseTableBody');
+            tbody.innerHTML = '';
+
+            if (!courses || courses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:#aaa;">Chưa có khóa học nào.</td></tr>`;
+                return;
+            }
+
+            courses.forEach(course => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding:12px;">${course.id.substring(0,8)}...</td>
+                    <td style="padding:12px;">${course.title}</td>
+                    <td style="padding:12px;">${course.description ? course.description.substring(0,60)+'...' : ''}</td>
+                    <td style="padding:12px; text-align:right;">${Number(course.price).toLocaleString('vi-VN')}</td>
+                    <td style="padding:12px; text-align:center;">
+                        <button onclick="showLessonForm('${course.id}', '${course.title}')" style="background:#00ffaa;color:#000;padding:6px 12px;border-radius:8px;margin-right:8px;">📚 Quản lý bài học</button>
+                        <button onclick="deleteCourse('${course.id}')" style="color:#ff4444;">🗑️ Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Thêm khóa học
+        document.getElementById('addCourseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabase.from('courses').insert({
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                price: parseInt(document.getElementById('price').value),
+                image_url: document.getElementById('image_url').value
+            });
+            if (error) alert("Lỗi: " + error.message);
+            else {
+                alert("✅ Thêm khóa học thành công!");
+                e.target.reset();
+                loadCourses();
+            }
+        });
+
+        // Xóa khóa học
+        window.deleteCourse = async function(id) {
+            if (!confirm('Xóa khóa học này và tất cả bài học bên trong?')) return;
+            const { error } = await supabase.from('courses').delete().eq('id', id);
+            if (error) alert("Lỗi: " + error.message);
+            else {
+                alert("✅ Đã xóa khóa học!");
+                loadCourses();
+            }
+        };
+
+        // Hiện form quản lý bài học
+        window.showLessonForm = async function(courseId, courseTitle) {
+            document.getElementById('lessonFormTitle').textContent = `Quản lý bài học cho: ${courseTitle}`;
+            document.getElementById('currentCourseId').value = courseId;
+            document.getElementById('lessonFormContainer').style.display = 'block';
+
+            const { data: lessons } = await supabase.from('course_lessons').select('*').eq('course_id', courseId).order('lesson_number');
+            const container = document.getElementById('existingLessons');
+            container.innerHTML = '<h4>Danh sách bài học hiện có:</h4>';
+
+            if (!lessons || lessons.length === 0) {
+                container.innerHTML += '<p style="color:#aaa;">Chưa có bài học nào.</p>';
+                return;
+            }
+
+            lessons.forEach(lesson => {
+                const div = document.createElement('div');
+                div.style = "display:flex;justify-content:space-between;align-items:center;background:#25253a;padding:12px;margin:8px 0;border-radius:8px;";
+                div.innerHTML = `
+                    <div><strong>Bài ${lesson.lesson_number}:</strong> ${lesson.title}</div>
+                    <button onclick="deleteLesson('${lesson.id}')" style="color:#ff4444;background:none;border:none;cursor:pointer;">🗑️ Xóa</button>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.hideLessonForm = function() {
+            document.getElementById('lessonFormContainer').style.display = 'none';
+        };
+
+        window.deleteLesson = async function(lessonId) {
+            if (!confirm('Xóa bài học này?')) return;
+            const { error } = await supabase.from('course_lessons').delete().eq('id', lessonId);
+            if (error) alert("Lỗi: " + error.message);
+            else {
+                alert("✅ Đã xóa bài học!");
+                const courseId = document.getElementById('currentCourseId').value;
+                const title = document.getElementById('lessonFormTitle').textContent.split(': ')[1] || '';
+                hideLessonForm();
+                showLessonForm(courseId, title);
+            }
+        };
+
+        window.addLesson = async function() {
+            const courseId = document.getElementById('currentCourseId').value;
+            const lessonNumber = parseInt(document.getElementById('lessonNumber').value);
+            const title = document.getElementById('lessonTitle').value.trim();
+
+            if (!title) return alert("Vui lòng nhập tên bài học!");
+
+            const { error } = await supabase.from('course_lessons').insert({
+                course_id: courseId,
+                lesson_number: lessonNumber,
+                title: title,
+                description: document.getElementById('lessonDescription').value.trim() || null,
+                video_url: document.getElementById('lessonVideoUrl').value.trim() || null,
+                file_url: document.getElementById('lessonFileUrl').value.trim() || null,
+                content_type: document.getElementById('lessonContentType').value
+            });
+
+            if (error) alert("Lỗi: " + error.message);
+            else {
+                alert("✅ Thêm bài học thành công!");
+                const courseId = document.getElementById('currentCourseId').value;
+                const title = document.getElementById('lessonFormTitle').textContent.split(': ')[1] || '';
+                hideLessonForm();
+                showLessonForm(courseId, title);
+            }
+        };
+
+        window.onload = () => loadCourses();
+    </script>
+</body>
+</html>

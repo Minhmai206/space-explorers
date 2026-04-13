@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Khóa Học - Space Explorers</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script type="module" src="assets/js/auth.js"></script>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <header>
+        <nav>
+            <div class="logo">🚀 Space Explorers</div>
+            <ul class="nav-links">
+                <li><a href="index.html">← Trang Chủ</a></li>
+            </ul>
+            <div class="auth-buttons" id="authButtons"></div>
+        </nav>
+    </header>
+
+    <main style="padding: 40px 5%; max-width: 1200px; margin: 0 auto;">
+        <button onclick="window.location.href='index.html'" class="btn" style="margin-bottom:20px;">← Quay về Trang Chủ</button>
+
+        <div id="courseHeader"></div>
+
+        <section style="margin-top: 50px;">
+            <h2 style="color:#00ffff; margin-bottom:20px;">📚 Nội dung khóa học</h2>
+            <div id="lessonsList"></div>
+        </section>
+    </main>
+
+    <script type="module">
+        import supabase from './assets/js/supabase-config.js';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('id');
+
+        let currentUser = null;
+        let currentLessonId = null;
+        let currentWatchLogId = null;     // ID của session hiện tại trong lesson_watch_log
+        let watchTimer = null;
+        let totalWatchTime = 0;
+
+        // Load chi tiết khóa học
+        async function loadCourseDetail() {
+            if (!courseId) return;
+
+            const { data: course } = await supabase.from('courses').select('*').eq('id', courseId).single();
+            if (!course) return document.getElementById('courseHeader').innerHTML = `<h1 style="color:red;">Khóa học không tồn tại</h1>`;
+
+            document.getElementById('courseHeader').innerHTML = `
+                <h1 style="font-size:2.8rem; color:#00ffff;">${course.title}</h1>
+                <p style="font-size:1.3rem;">${course.description}</p>
+            `;
+
+            const { data: lessons } = await supabase
+                .from('course_lessons')
+                .select('*')
+                .eq('course_id', courseId)
+                .order('lesson_number', { ascending: true });
+
+            const container = document.getElementById('lessonsList');
+            container.innerHTML = '';
+
+            lessons.forEach(lesson => {
+                let videoHTML = '';
+                if (lesson.video_url) {
+                    let embed = lesson.video_url;
+                    if (embed.includes('youtu.be/')) embed = embed.replace('youtu.be/', 'youtube.com/embed/');
+                    else if (embed.includes('watch?v=')) {
+                        const id = embed.split('watch?v=')[1].split('&')[0];
+                        embed = `https://www.youtube.com/embed/${id}`;
+                    }
+                    videoHTML = `<iframe width="100%" height="480" src="${embed}" frameborder="0" allowfullscreen style="border-radius:12px;"></iframe>`;
+                }
+
+                const div = document.createElement('div');
+                div.style = "background:#1a1a3a; margin-bottom:25px; padding:25px; border-radius:15px;";
+                div.innerHTML = `
+                    <h3 style="color:#00ffcc;">📌 Bài ${lesson.lesson_number}: ${lesson.title}</h3>
+                    ${lesson.description ? `<p>${lesson.description}</p>` : ''}
+                    ${videoHTML ? `<div style="margin:25px 0;">${videoHTML}</div>` : ''}
+                    <button onclick="startTracking('${lesson.id}', ${lesson.lesson_number})" class="btn btn-primary">Bắt đầu học bài này</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // ==================== BẮT ĐẦU THEO DÕI (PHƯƠNG ÁN 2) ====================
+        window.startTracking = async function(lessonId, lessonNumber) {
+            currentLessonId = lessonId;
+            totalWatchTime = 0;
+
+            // Tạo session mới trong lesson_watch_log
+            const { data, error } = await supabase
+                .from('lesson_watch_log')
+                .insert({
+                    user_id: currentUser.id,
+                    lesson_id: lessonId,
+                    start_time: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error("Lỗi tạo session:", error);
+                alert("Không thể bắt đầu theo dõi.");
+                return;
+            }
+
+            currentWatchLogId = data.id;
+            alert(`📌 Đang theo dõi bài ${lessonNumber}. Thời gian đã xem trước: 0 phút`);
+
+            // Heartbeat mỗi 30 giây
+            if (watchTimer) clearInterval(watchTimer);
+            watchTimer = setInterval(() => {
+                totalWatchTime += 30;
+                updateWatchLog();
+            }, 30000);
+        };
+
+        // Cập nhật session hiện tại
+        async function updateWatchLog() {
+            if (!currentWatchLogId) return;
+
+            await supabase
+                .from('lesson_watch_log')
+                .update({
+                    watch_duration: totalWatchTime,
+                    end_time: new Date().toISOString()
+                })
+                .eq('id', currentWatchLogId);
+        }
+
+        // Load khi trang mở
+        window.addEventListener('load', async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            currentUser = user;
+
+            if (typeof checkAuth === 'function') checkAuth();
+            loadCourseDetail();
+
+            // Lưu tiến độ khi rời trang
+            window.addEventListener('beforeunload', () => {
+                if (watchTimer) {
+                    clearInterval(watchTimer);
+                    if (currentWatchLogId) updateWatchLog();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
